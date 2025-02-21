@@ -69,8 +69,13 @@ def "main get_explanations" [] {
   }
 }
 
+def explanations [] {
+  1..$newest | filter { $in != 404 } | each { open $"explanations/($in).json" }
+}
+
 def "main markdown" [] {
-  let comics = open comics.json
+  let comics = comics
+  let explanations = explanations
 
   let metadata = {
     # title: [
@@ -90,8 +95,6 @@ def "main markdown" [] {
     $"# #($comic.num): ($comic.title) \(($comic.year)-($comic.month | fill --width 2 --alignment right --character "0")-($comic.day | fill --width 2 --alignment right --character "0")\) {#comic-($comic.num)}\n\n![]\(($path)\){width=100%}\n\n($comic.alt)\n\n[Explain]\(#explain-($comic.num)\)\n\n" out>> out.md
   }
 
-  let explanations = open explanations.json
-
   for explanation in $explanations {
     let text = $explanation.explanation | xq --query 'p' | lines | str join "\n\n"
   
@@ -105,6 +108,8 @@ def "main fetch_imgs" [] {
   mkdir imgs
 
   for comic in $comics {
+    print --stderr $"Downloading ($comic.num)..."
+
     let url = $comic.img
     let ext = $url | path parse | get extension
     let path = $"imgs/($comic.num).($ext)"
